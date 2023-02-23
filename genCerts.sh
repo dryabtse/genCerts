@@ -24,79 +24,78 @@ function genConfig {
 	echo "Generating a new config template..."
 	cat >> $CONFIG_TEMPLATE_NAME <<EOF
 [ RootCA ]
-dir             = ./RootCA
-certs           = \$dir/ca.db.certs
-database        = \$dir/ca.db.index
-new_certs_dir   = \$dir/ca.db.certs
-certificate     = \$dir/rootCA.crt
-serial          = \$dir/ca.db.serial
-private_key     = \$dir/rootCA.key
-RANDFILE        = \$dir/ca.db.rand
-default_md      = sha256
-default_days    = 365
+dir		= ./RootCA
+certs		= \$dir/ca.db.certs
+database	= \$dir/ca.db.index
+new_certs_dir	= \$dir/ca.db.certs
+certificate	= \$dir/rootCA.crt
+serial		= \$dir/ca.db.serial
+private_key	= \$dir/rootCA.key
+RANDFILE	= \$dir/ca.db.rand
+default_md	= sha256
+default_days	= 365
 default_crl_days= 30
-email_in_dn     = no
-unique_subject  = no
-policy          = policy_match
+email_in_dn	= no
+unique_subject	= no
+policy		= policy_match
 
 [ SigningCA1 ]
-dir             = ./SigningCA1
-certs           = \$dir/ca.db.certs
-database        = \$dir/ca.db.index
-new_certs_dir   = \$dir/ca.db.certs
-certificate     = \$dir/signing-ca-1.crt
-serial          = \$dir/ca.db.serial
-private_key     = \$dir/signing-ca-1.key
-RANDFILE        = \$dir/ca.db.rand
-default_md      = sha256
-default_days    = 365
+dir		= ./SigningCA1
+certs		= \$dir/ca.db.certs
+database	= \$dir/ca.db.index
+new_certs_dir	= \$dir/ca.db.certs
+certificate	= \$dir/signing-ca-1.crt
+serial		= \$dir/ca.db.serial
+private_key	= \$dir/signing-ca-1.key
+RANDFILE	= \$dir/ca.db.rand
+default_md	= sha256
+default_days	= 365
 default_crl_days= 30
-email_in_dn     = no
-unique_subject  = no
-policy          = policy_match
+email_in_dn	= no
+unique_subject	= no
+policy		= policy_match
 
 [ SigningCA2 ]
-dir             = ./SigningCA2
-certs           = \$dir/ca.db.certs
-database        = \$dir/ca.db.index
-new_certs_dir   = \$dir/ca.db.certs
-certificate     = \$dir/signing-ca-2.crt
-serial          = \$dir/ca.db.serial
-private_key     = \$dir/signing-ca-2.key
-RANDFILE        = \$dir/ca.db.rand
-default_md      = sha256
-default_days    = 365
+dir		= ./SigningCA2
+certs		= \$dir/ca.db.certs
+database	= \$dir/ca.db.index
+new_certs_dir	= \$dir/ca.db.certs
+certificate	= \$dir/signing-ca-2.crt
+serial		= \$dir/ca.db.serial
+private_key	= \$dir/signing-ca-2.key
+RANDFILE	= \$dir/ca.db.rand
+default_md	= sha256
+default_days	= 365
 default_crl_days= 30
-email_in_dn     = no
-unique_subject  = no
-policy          = policy_match
+email_in_dn	= no
+unique_subject	= no
+policy		= policy_match
 
 [ policy_match ]
-countryName     = match
-stateOrProvinceName = match
-localityName            = match
-organizationName    = match
-organizationalUnitName  = optional
-commonName      = supplied
-emailAddress        = optional
+countryName		= match
+stateOrProvinceName	= match
+localityName		= match
+organizationName	= match
+organizationalUnitName	= optional
+commonName		= supplied
+emailAddress		= optional
 
 [ v3_req_cl ]
-basicConstraints = CA:FALSE
-keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-extendedKeyUsage = clientAuth
+basicConstraints	= CA:FALSE
+keyUsage		= nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage	= clientAuth
 
 [ v3_ca ]
-subjectKeyIdentifier=hash
-authorityKeyIdentifier=keyid:always,issuer:always
-basicConstraints = CA:true
+subjectKeyIdentifier	= hash
+authorityKeyIdentifier	= keyid:always,issuer:always
+basicConstraints	= CA:true
 
 [ v3_req_srv ]
-basicConstraints = CA:FALSE
-keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth, clientAuth
+basicConstraints	= CA:FALSE
+keyUsage		= nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage	= serverAuth, clientAuth
 EOF
 }
-
 
 function genCAs {
 	echo "Generating 2 signing CAs..."
