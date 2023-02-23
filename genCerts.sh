@@ -97,11 +97,6 @@ extendedKeyUsage = serverAuth, clientAuth
 EOF
 }
 
-function getCAconfig {
-	echo "Generating a new CA config from the template..."
-        cat >> $CONFIG_TEMPLATE_NAME <<EOF
-EOF
-}
 
 function genCAs {
 	echo "Generating 2 signing CAs..."
