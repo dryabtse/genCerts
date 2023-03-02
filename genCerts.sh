@@ -1,3 +1,5 @@
+#!/bin/bash
+
 CONFIG_TEMPLATE_NAME=root-ca.cfg
 
 function mkRoot {
@@ -139,6 +141,7 @@ function signServerCerts {
 	echo "Signing Server certificates..."
 	while read -r line
 	do
+		[[ "$line" =~ ^#.*$ ]] && continue
 		hostname=`echo $line | awk '{ print $1 }'`
 		IP=`echo $line | awk '{ print $2 }'`
 		echo $hostname $IP
