@@ -1,5 +1,32 @@
 #!/bin/bash
 
+# Initialize variables to some default values or empty strings
+keepRoot=false
+keepCA=false
+keepAll=false
+
+# Parse named arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --keepRoot) keepRoot=true; shift ;; 
+        --keepCA) keepCA=true; shift ;;
+        --keepAll) keepAll=true; shift ;;
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac
+    shift
+done
+
+if [ "$keepCA" = true ]
+then
+    keepRoot=true
+fi
+
+if [ "$keepAll" = true ]
+then
+   keepRoot=true
+   keepCA=true
+fi
+
 CONFIG_TEMPLATE_NAME=root-ca.cfg
 
 function mkRoot {
@@ -17,9 +44,109 @@ function mkRoot {
 function backup {
 	echo "Backing up the prevous setup..."
 	ts=`date +"%Y-%m-%dT%T"`
-	mkdir bak.$ts
-	mv *.csr *.crt *.pem *.key RootCA SigningCA* *root-ca.cfg bak.$ts
-	echo "Backup saved under bak.$ts"
+	backupDir=bak.$ts
+	mkdir $backupDir
+	if [ "$keepRoot" = false ]
+	then
+		backupRoot $backupDir
+	fi
+	if [ "$keepCA" = false ]
+	then
+	    backupCAs $backupDir
+	fi
+	if [ "$keepAll" = false ]
+	then
+		backupClient $backupDir
+	fi
+	backupConfig $backupDir
+	backupHosts $backupDir
+	backupElse $backupDir
+	echo "Backup saved under $backupDir"
+}
+
+function backupRoot {
+	backupDir=$1
+	echo "⌞Backing up the Root CA into $backupDir ..."
+	if [ -d "$PWD/$backupDir" ]
+	then
+        mv RootCA $backupDir
+	else
+	    echo "${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting..."
+		exit 1
+	fi
+}
+
+function backupConfig {
+	backupDir=$1
+	echo "⌞Backing up the config file into $backupDir ..."
+	if [ -d "$PWD/$backupDir" ]
+	then
+        mv *root-ca.cfg $backupDir
+	else
+	    echo "${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting..."
+		exit 1
+	fi
+}
+
+function backupCAs {
+	backupDir=$1
+	echo "⌞Backing up the Intermediate CAs into $backupDir ..."
+	if [ -d "$PWD/$backupDir" ]
+	then
+        mv SigningCA* CA.pem $backupDir
+	else
+	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting..."
+		exit 1
+	fi
+}
+
+function backupClient {
+	backupDir=$1
+	echo "⌞Backing up the client material into $backupDir..."
+	if [ -d "$PWD/$backuDir" ]
+	then
+        mv client.* $backupDir
+	else
+	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting..."
+		exit 1
+	fi
+}
+
+function backupHosts {
+	backupDir=$1
+	echo "⌞Backing up the hosts material into $backupDir..."
+	if [ -d "$PWD/$backupDir" ]
+	then
+		for i in `cat hostnames | grep -v ^# | awk '{ print $1}'`
+		do
+		    mv $i.* $backupDir
+		done
+	else
+	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting..."
+		exit 1
+	fi
+}
+
+function backupElse {
+	backupDir=$1
+	listCmd="ls -1 *.csr *.crt *.pem *.key"
+	backupCmd="mv *.csr *.crt *.pem *.key $backupDir"
+	echo "⌞Backing up everything else into $backupDir..."
+	if [ -d "$PWD/$backupDir" ]
+	then
+		$listCmd > /dev/null 2>&1
+		if [ $? -eq 0 ]
+		then
+			numFiles=`$listCmd | wc -l`
+			if [ $numFiles -gt 0 ]
+			then
+				$backupCmd
+			fi
+		fi
+	else
+	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting..."
+		exit 1
+	fi
 }
 
 function genConfig {
@@ -169,8 +296,19 @@ function signClientCert {
 }
 
 backup
-mkRoot
+if [ "$keepRoot" = false ]
+then
+    mkRoot
+fi
 genConfig
-genCAs
+
+if [ "$keepCA" = false ]
+then
+    genCAs
+fi
 signServerCerts
-signClientCert
+
+if [ "$keepAll" = false ]
+then
+    signClientCert
+fi
