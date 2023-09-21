@@ -5,12 +5,22 @@ keepRoot=false
 keepCA=false
 keepAll=false
 
+function usage
+{
+     echo "Usage: `basename $0` [ [--keepRoot] [--keepCA] [--keepAll] ] [--help]"
+	 echo "       --keepRoot   preserve the Root CA, regenerate everything else"
+	 echo "       --keepCA     preserve the Intermediate CAs, regenerate everything else"
+	 echo "       --keepAll    preserve everything but the host certificates"
+	 echo "       --help       shows this output"
+}
+
 # Parse named arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --keepRoot) keepRoot=true; shift ;; 
         --keepCA) keepCA=true; shift ;;
         --keepAll) keepAll=true; shift ;;
+		--help) usage; exit 0;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
@@ -28,6 +38,7 @@ then
 fi
 
 CONFIG_TEMPLATE_NAME=root-ca.cfg
+
 
 function mkRoot {
 	echo "Creatng a self signed root cert..."
