@@ -42,7 +42,7 @@ HOSTNAMES_FILE=hostnames
 
 
 function mkRoot {
-	echo "Creatng a self signed root cert..."
+	echo "Creatng a self signed root cert ..."
 	openssl genrsa -out rootCA.key 2048
 	openssl req -x509 -new -nodes -key rootCA.key -days 365 -out rootCA.crt -subj "/C=AU/ST=NSW/L=Sydney/O=MongoDB/OU=TS/CN=dmntest.com"
 	mkdir RootCA
@@ -54,7 +54,7 @@ function mkRoot {
 }
 
 function backup {
-	echo "Backing up the prevous setup..."
+	echo "Backing up the prevous setup ..."
 	ts=`date +"%Y-%m-%dT%T"`
 	backupDir=bak.$ts
 	mkdir $backupDir
@@ -72,69 +72,72 @@ function backup {
 	fi
 	backupConfig $backupDir
 	backupHosts $backupDir
-	backupElse $backupDir
+	# backupElse $backupDir
 	echo "Backup saved under $backupDir"
 }
 
 function backupRoot {
 	backupDir=$1
-	echo "⌞Backing up the Root CA into $backupDir ..."
+	echo "   ⌞Backing up the Root CA into $backupDir ..."
 	if [ -d "$PWD/$backupDir" ]
 	then
         mv RootCA $backupDir
 	else
-	    echo "${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting..."
+	    echo "${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting ..."
 		exit 1
 	fi
 }
 
 function backupConfig {
 	backupDir=$1
-	echo "⌞Backing up the config file into $backupDir ..."
+	echo "   ⌞Backing up the config file into $backupDir ..."
 	if [ -d "$PWD/$backupDir" ]
 	then
         mv *root-ca.cfg $backupDir
 	else
-	    echo "${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting..."
+	    echo "${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting ..."
 		exit 1
 	fi
 }
 
 function backupCAs {
 	backupDir=$1
-	echo "⌞Backing up the Intermediate CAs into $backupDir ..."
+	echo "   ⌞Backing up the Intermediate CAs into $backupDir ..."
 	if [ -d "$PWD/$backupDir" ]
 	then
         mv SigningCA* CA.pem $backupDir
 	else
-	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting..."
+	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting ..."
 		exit 1
 	fi
 }
 
 function backupClient {
 	backupDir=$1
-	echo "⌞Backing up the client material into $backupDir..."
+	echo "   ⌞Backing up the client material into $backupDir ..."
 	if [ -d "$PWD/$backuDir" ]
 	then
         mv client.* $backupDir
 	else
-	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting..."
+	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting ..."
 		exit 1
 	fi
 }
 
 function backupHosts {
 	backupDir=$1
-	echo "⌞Backing up the hosts material into $backupDir..."
+	echo "   ⌞Backing up the hosts material into $backupDir ..."
 	if [ -d "$PWD/$backupDir" ]
 	then
-		for i in `cat hostnames | grep -v ^# | awk '{ print $1}'`
-		do
-		    mv $i.* $backupDir
-		done
+		if [ -f "$HOSTNAMES_FILE" ]
+		then
+			for i in `cat hostnames | grep -v ^# | awk '{ print $1}'`
+			do
+				mv $i.* $backupDir
+			done
+		fi
 	else
-	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting..."
+	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting ..."
 		exit 1
 	fi
 }
@@ -143,7 +146,7 @@ function backupElse {
 	backupDir=$1
 	listCmd="ls -1 *.csr *.crt *.pem *.key"
 	backupCmd="mv *.csr *.crt *.pem *.key $backupDir"
-	echo "⌞Backing up everything else into $backupDir..."
+	echo "   ⌞Backing up everything else into $backupDir ..."
 	if [ -d "$PWD/$backupDir" ]
 	then
 		$listCmd > /dev/null 2>&1
@@ -156,13 +159,13 @@ function backupElse {
 			fi
 		fi
 	else
-	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting..."
+	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting ..."
 		exit 1
 	fi
 }
 
 function genConfig {
-	echo "Generating a new config template..."
+	echo "Generating a new config template ..."
 	cat >> $CONFIG_TEMPLATE_NAME <<EOF
 [ RootCA ]
 dir		= ./RootCA
@@ -239,7 +242,7 @@ EOF
 }
 
 function genCAs {
-	echo "Generating 2 signing CAs..."
+	echo "Generating 2 signing CAs ..."
 	index=1
 	openssl genrsa -out signing-ca-${index}.key 2048
 	openssl req -new -days 1460 -key signing-ca-${index}.key \
@@ -277,7 +280,7 @@ function genCAs {
 }
 
 function signServerCerts {
-	echo "Signing Server certificates..."
+	echo "Signing Server certificates ..."
 	if [ -f "$HOSTNAMES_FILE" ]
 	then
 		while read -r line
@@ -297,12 +300,12 @@ function signServerCerts {
 			cat $hostname.crt $hostname.key >> $hostname.pem
 		done < hostnames
 	else
-	    echo "The $HOSTNAMES_FILE is not present. Skipping this step..."
+	    echo "The $HOSTNAMES_FILE is not present. Skipping this step ..."
 	fi
 }
 
 function signClientCert {
-	echo "Generating client cert..."
+	echo "Generating client cert ..."
 	openssl genrsa -out client.key 2048
 	openssl req -new -days 365 -key client.key -out client.csr \
 		-subj "/C=AU/ST=NSW/L=Sydney/O=MongoDB/CN=client"
