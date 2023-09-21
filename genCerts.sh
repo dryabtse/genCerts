@@ -38,6 +38,7 @@ then
 fi
 
 CONFIG_TEMPLATE_NAME=root-ca.cfg
+HOSTNAMES_FILE=hostnames
 
 
 function mkRoot {
@@ -277,22 +278,27 @@ function genCAs {
 
 function signServerCerts {
 	echo "Signing Server certificates..."
-	while read -r line
-	do
-		[[ "$line" =~ ^#.*$ ]] && continue
-		hostname=`echo $line | awk '{ print $1 }'`
-		IP=`echo $line | awk '{ print $2 }'`
-		echo $hostname $IP
-		openssl genrsa -out $hostname.key 2048
-		export SAN=DNS:$hostname,IP:$IP
-		echo "subjectAltName=\${ENV::SAN}" >> $CONFIG_TEMPLATE_NAME
-		openssl req -new -days 365 -key $hostname.key -out $hostname.csr \
-			-subj "/C=AU/ST=NSW/L=Sydney/O=MongoDB/OU=mongodb/CN=$hostname"
-		openssl ca -batch -name SigningCA2 -config $CONFIG_TEMPLATE_NAME -extensions v3_req_srv -out $hostname.crt \
-			-infiles $hostname.csr
-		# Create the .pem file with the certificate and private key
-		cat $hostname.crt $hostname.key >> $hostname.pem
-	done < hostnames
+	if [ -f "$HOSTNAMES_FILE" ]
+	then
+		while read -r line
+		do
+			[[ "$line" =~ ^#.*$ ]] && continue
+			hostname=`echo $line | awk '{ print $1 }'`
+			IP=`echo $line | awk '{ print $2 }'`
+			echo $hostname $IP
+			openssl genrsa -out $hostname.key 2048
+			export SAN=DNS:$hostname,IP:$IP
+			echo "subjectAltName=\${ENV::SAN}" >> $CONFIG_TEMPLATE_NAME
+			openssl req -new -days 365 -key $hostname.key -out $hostname.csr \
+				-subj "/C=AU/ST=NSW/L=Sydney/O=MongoDB/OU=mongodb/CN=$hostname"
+			openssl ca -batch -name SigningCA2 -config $CONFIG_TEMPLATE_NAME -extensions v3_req_srv -out $hostname.crt \
+				-infiles $hostname.csr
+			# Create the .pem file with the certificate and private key
+			cat $hostname.crt $hostname.key >> $hostname.pem
+		done < hostnames
+	else
+	    echo "The $HOSTNAMES_FILE is not present. Skipping this step..."
+	fi
 }
 
 function signClientCert {
