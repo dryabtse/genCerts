@@ -33,13 +33,21 @@ fi
 
 if [ "$keepAll" = true ]
 then
-   keepRoot=true
-   keepCA=true
+    keepRoot=true
+    keepCA=true
 fi
 
 CONFIG_TEMPLATE_NAME=root-ca.cfg
 HOSTNAMES_FILE=hostnames
 
+function testFilePattern {
+	if compgen -G "$PWD/$1" > /dev/null
+	then
+	    return 1
+	else
+	    return 0
+	fi
+}
 
 function mkRoot {
 	echo "Creatng a self signed root cert ..."
@@ -81,7 +89,10 @@ function backupRoot {
 	echo "   ⌞Backing up the Root CA into $backupDir ..."
 	if [ -d "$PWD/$backupDir" ]
 	then
-        mv RootCA $backupDir
+	    if [ -d "$PWD/RootCA" ]
+		then
+            mv RootCA $backupDir
+		fi
 	else
 	    echo "${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting ..."
 		exit 1
@@ -93,7 +104,10 @@ function backupConfig {
 	echo "   ⌞Backing up the config file into $backupDir ..."
 	if [ -d "$PWD/$backupDir" ]
 	then
-        mv *root-ca.cfg $backupDir
+	    if [ -f "$PWD/root-ca.cfg" ]
+		then
+            mv root-ca.cfg $backupDir
+		fi
 	else
 	    echo "${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting ..."
 		exit 1
@@ -102,10 +116,18 @@ function backupConfig {
 
 function backupCAs {
 	backupDir=$1
+	pattern=("SigningCA*" "CA.pem")
 	echo "   ⌞Backing up the Intermediate CAs into $backupDir ..."
 	if [ -d "$PWD/$backupDir" ]
 	then
-        mv SigningCA* CA.pem $backupDir
+	    for p in ${pattern[@]}
+		do
+	        testFilePattern $p
+			if [ $? -eq 1 ]
+			then
+			    mv $p $backupDir
+			fi
+		done 
 	else
 	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting ..."
 		exit 1
@@ -114,10 +136,17 @@ function backupCAs {
 
 function backupClient {
 	backupDir=$1
+	pattern="client.*"
 	echo "   ⌞Backing up the client material into $backupDir ..."
 	if [ -d "$PWD/$backuDir" ]
 	then
-        mv client.* $backupDir
+	    testFilePattern "$pattern"
+		if [ $? -eq 1 ]
+		then
+            mv client.* $backupDir
+		else
+		    echo "No matching files found"
+		fi
 	else
 	    echo "  ⌞${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting ..."
 		exit 1
@@ -133,7 +162,13 @@ function backupHosts {
 		then
 			for i in `cat hostnames | grep -v ^# | awk '{ print $1}'`
 			do
-				mv $i.* $backupDir
+			    testFilePattern $i
+				if [ $? -eq 1 ]
+				then
+				    mv $i.* $backupDir
+				else
+				    echo "No matching files found for the $i hostname"
+				fi
 			done
 		fi
 	else
