@@ -39,6 +39,7 @@ fi
 
 CONFIG_TEMPLATE_NAME=root-ca.cfg
 HOSTNAMES_FILE=hostnames
+ROOT_CA_DIR=RootCA
 
 function testFilePattern {
 	if compgen -G "$PWD/$1" > /dev/null
@@ -52,7 +53,7 @@ function testFilePattern {
 function mkRoot {
 	echo "Creatng a self signed root cert ..."
 	openssl genrsa -out rootCA.key 2048
-	openssl req -x509 -new -nodes -key rootCA.key -days 365 -out rootCA.crt -subj "/C=AU/ST=NSW/L=Sydney/O=MongoDB/OU=TS/CN=dmntest.com"
+	openssl req -x509 -new -nodes -key rootCA.key -days 1460 -out rootCA.crt -subj "/C=AU/ST=NSW/L=Sydney/O=MongoDB/OU=TS/CN=dmntest.com"
 	mkdir RootCA
 	mkdir RootCA/ca.db.certs
 	echo "01" >> RootCA/ca.db.serial
@@ -68,7 +69,7 @@ function backup {
 	mkdir $backupDir
 	if [ "$keepRoot" = false ]
 	then
-		backupRoot $backupDir
+	    backupRoot $backupDir
 	fi
 	if [ "$keepCA" = false ]
 	then
@@ -76,7 +77,7 @@ function backup {
 	fi
 	if [ "$keepAll" = false ]
 	then
-		backupClient $backupDir
+	    backupClient $backupDir
 	fi
 	backupConfig $backupDir
 	backupHosts $backupDir
@@ -104,9 +105,9 @@ function backupConfig {
 	echo "   ⌞Backing up the config file into $backupDir ..."
 	if [ -d "$PWD/$backupDir" ]
 	then
-	    if [ -f "$PWD/root-ca.cfg" ]
+	    if [ -f "$PWD/$CONFIG_TEMPLATE_NAME" ]
 		then
-            mv root-ca.cfg $backupDir
+            mv $CONFIG_TEMPLATE_NAME $backupDir
 		fi
 	else
 	    echo "${FUNCNAME[*]} ERROR: Provided backup directory $backupDir does not exist. Exiting ..."
@@ -280,9 +281,9 @@ function genCAs {
 	echo "Generating 2 signing CAs ..."
 	index=1
 	openssl genrsa -out signing-ca-${index}.key 2048
-	openssl req -new -days 1460 -key signing-ca-${index}.key \
-		-out signing-ca-${index}.csr -subj "/C=AU/ST=NSW/L=Sydney/O=MongoDB/OU=TS/CN=ClientsCA"
-	openssl ca -batch -name RootCA -config $CONFIG_TEMPLATE_NAME -extensions v3_ca \
+	openssl req -new -key signing-ca-${index}.key \
+		-out signing-ca-${index}.csr -subj "/C=AU/ST=NSW/L=Sydney/O=MongoDB/OU=COE/CN=ClientsCA"
+	openssl ca -batch -name RootCA -days 1460 -config $CONFIG_TEMPLATE_NAME -extensions v3_ca \
 		-out signing-ca-${index}.crt \
 		-infiles signing-ca-${index}.csr
 
@@ -297,9 +298,9 @@ function genCAs {
 	# repeat with...
 	index=2
 	openssl genrsa -out signing-ca-${index}.key 2048
-	openssl req -new -days 1460 -key signing-ca-${index}.key \
+	openssl req -new -key signing-ca-${index}.key \
 		-out signing-ca-${index}.csr -subj "/C=AU/ST=NSW/L=Sydney/O=MongoDB/OU=TS/CN=ServersCA"
-	openssl ca -batch -name RootCA -config $CONFIG_TEMPLATE_NAME -extensions v3_ca \
+	openssl ca -batch -name RootCA -days 1460 -config $CONFIG_TEMPLATE_NAME -extensions v3_ca \
 		-out signing-ca-${index}.crt \
 		-infiles signing-ca-${index}.csr
 
@@ -327,9 +328,9 @@ function signServerCerts {
 			openssl genrsa -out $hostname.key 2048
 			export SAN=DNS:$hostname,IP:$IP
 			echo "subjectAltName=\${ENV::SAN}" >> $CONFIG_TEMPLATE_NAME
-			openssl req -new -days 365 -key $hostname.key -out $hostname.csr \
+			openssl req -new -key $hostname.key -out $hostname.csr \
 				-subj "/C=AU/ST=NSW/L=Sydney/O=MongoDB/OU=mongodb/CN=$hostname"
-			openssl ca -batch -name SigningCA2 -config $CONFIG_TEMPLATE_NAME -extensions v3_req_srv -out $hostname.crt \
+			openssl ca -batch -name SigningCA2 -days 1460 -config $CONFIG_TEMPLATE_NAME -extensions v3_req_srv -out $hostname.crt \
 				-infiles $hostname.csr
 			# Create the .pem file with the certificate and private key
 			cat $hostname.crt $hostname.key >> $hostname.pem
@@ -342,9 +343,9 @@ function signServerCerts {
 function signClientCert {
 	echo "Generating client cert ..."
 	openssl genrsa -out client.key 2048
-	openssl req -new -days 365 -key client.key -out client.csr \
-		-subj "/C=AU/ST=NSW/L=Sydney/O=MongoDB/CN=client"
-	openssl ca -batch -name SigningCA1 -config root-ca.cfg -extensions v3_req_cl -out client.crt \
+	openssl req -new -key client.key -out client.csr \
+		-subj "/C=AU/ST=NSW/L=Sydney/O=MongoDB/OU=COE/CN=client"
+	openssl ca -batch -name SigningCA1 -days 1460 -config root-ca.cfg -extensions v3_req_cl -out client.crt \
 		-infiles client.csr
 	# Create the .pem file with the certificate and private key
 	cat client.crt client.key >> client.pem
